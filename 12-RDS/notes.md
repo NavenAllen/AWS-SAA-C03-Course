@@ -439,3 +439,8 @@ Need to define the source and destination endpoints. These point at the
 physical source and target databases.
 
 One endpoint MUST be on AWS.
+
+#### Schema Converstion Tool:
+Used when migrating between different engines
+
+Used when very very large databases need to be migrated as they use AWS Snowball and is transferred to a Physical file storage 
