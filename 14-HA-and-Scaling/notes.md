@@ -1,50 +1,19 @@
 ## HA and Scaling
 
-### Load Balancing Fundamentals
+### Elastic Load Balancing
 
-Without load balancing, it is difficult to scale.
+ELB is a DNS A Record pointing at 1+ Nodes in AZ
+- Each AZ has one node and it's not a central server
 
-The user connects to a load balancer that is set to listens on port 80 and 443
+Nodes in each AZ can scale
 
-Within AWS, the ports the load balancer will listen to is called
-the **listener**.
+Internet-Facing LB has public IPv4 but can connect to private instances too (instances doesnt have to be public)
 
-The user is connected to the load balancer and not the actual server.
+Internal LB has only private IPv4 address
 
-Behind the load balancer, there is an application server. At a high
-level when Bob connects to the load balancer, it distributes that to
-servers on the application server.
+*Listener* configuration controls what Load Balancer does
 
-As long as 1+ servers are available, the LB is operational. Clients
-shouldn't see errors.
-
-#### LB Exam Powerup
-
-Clients connect to the **listener** of the load balancer
-
-The load balancer connects to one or more **targets** or servers
-
-Listener connection - one connection between the client and listener
-Backend connection - one connection between load balancer and backend instance
-
-Client is abstracted away from individual servers
-
-Used for high availability, fault tolerance, and scaling
-
-### Application Load Balancer (ALB)
-
-ALB is a layer 7 - it is capable of inspecting data that passes through
-it and can understand the application layer
-
-It can take action based on things from that protocol
-
-These are scalable and highly available.
-
-Internet facing or Internal
-
-Internal load balancer is used for inside a VPC only
-
-Listens on the outside and sends to target groups
+ELB needs 8+ (/28) free IP addresses per Subnet, but AWS recommends /27 
 
 #### Cross zone load balancing
 
@@ -59,23 +28,42 @@ If all instances are shown as healthy, it can distribute evenly.
 ALB can support a wide array of targets. An individual target can be a
 member of multiple groups.
 
-#### ALB Exam Powerup
+### Application Load Balancer (ALB)
 
-**Targets** are lambda functions or EC2 instances that are directed towards.
+ALB is a layer 7 - only on HTTP and/or HTTP, nothing else
 
-Rules are path based or host based.
+Can understand Layer 7 content
 
-Support EC2, EKS, Lambda, HTTPS, HTTP/2 and websockets
+HTTP HTTP SSL/TLS always terminated on ALB and broken, new connection to application
 
-ALB can use SNI for multiple SSL certs - host based rules
+ALBs are slower than NLB
 
-AWS does not suggest using Classic Load Balancer (CLB), these are legacy.
+ALBs have rules that decided what to do and processed in priority order
+
+### Network Load Balancer (NLB)
+
+Layer 4 device, cant understand HTTP or HTTPS
+
+Really fast, default to this for any non http/s
+
+Unbroken Encryption 
+
+#### When to use ALB or NLB
+- Unbroken Encryption: NLB
+- Static IP for whitelisgin: NLB
+- Fastest Perfromance: NLB
+- Not HTTP/S: NLB
+- Privatelink: NLB
+
+ANYTHING ELSE: ALB
+
 
 ### Launch Configuration and Templates
 
-LC and LT key concepts. They are documents which allow you to config an EC2
-instance in advance. You can configure userdata and IAM role along with
-networking and security groups.
+LC and LT key concepts:
+- They are documents which allow you to config an EC2 instance in advance.
+- You can configure userdata and IAM role along with networking and security groups.
+- NOT editable but LC has versions
 
 Launch templates
 - Provide T2/T3 Unlimited, placement groups with more.  
@@ -111,44 +99,28 @@ Scheduled Scaling - time based adjustments
 Dynamic Scaling
 
 - Simple : If CPU is above 50%, add one to capacity
-- Stepped : If CPU usage is above 50%, add one, if above 80% add three
-- Target : Desired aggregate CPU = 40%, ASG will achieve this
+- Stepped : Bigger +/- based on difference 
+- Target : Desired aggregate CPU = 40%, ASG will achieve this, can not use all metrics 
 
 Cooldown Period - How long to wait at the end of a scaling action before scaling again.
 
-Always use cool downs to avoid rapid scaling.
 
-AGS can use the load balancer health checks rather than EC2.
+AGS can use the load balancer health checks rather than EC2 - health checks need to be proper according to application complexity
 
-Autoscaling Groups are free  
 
-Think about more, smaller instances to allow granularity
+#### Final points
+- Free
+- Use cool downs to avoid rapid scaling
+- more, smaller instances: granuality
+- Use with ALB's for elasticity
+- ASG defines when and where, Launch Template defines what.
 
-You should use ALB with autoscaling groups.
+#### ASG Lifecycle Hooks
+Define a hook during scale up or scale down
 
-ASG defines when and where, Launch Template defines what.
+Example EC2 Scale Out Lifecycle hook:
+Pending -> Pending: Wait (Do custom actions like SNS topic) -> Pending: Proceed -> InService
 
-### Network Load Balancer (NLB)
-
-Part of AWS Version 2 series of load balances.
-
-NLB's are Layer 4, only understand TCP and UDP.
-
-Can't understand or interpret HTTP or HTTPs, for these reason they are much
-faster in latency. You should default to NLB if http is not used.
-
-There is nothing stopping NLB from load balancing on HTTP just by data.
-
-Rapid scaling - **millions of requests per second**
-
-Only member of the load balancing family that can be provided a static IP.
-There is 1 interface per AZ. Can also use Elastic IPs (whitelisting)
-
-Can do SSL pass through.
-
-NLB can load balance non HTTP/S applications, doesn't care about anything
-above TCP/UDP. This means it can handle load balancing for FTP or things
-that aren't HTTP or HTTPS.
 
 ### SSL Offload and Session Stickiness
 
