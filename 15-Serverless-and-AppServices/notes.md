@@ -115,6 +115,8 @@ Should always use AWS services for input and output.
 
 Lambda functions can run up to 15 minutes. That is the max limit.
 
+VERY IMPORTANT: Lambda times out in **15 minutes**
+
 #### Key Considerations
 
 - Currently 15 min execution limit
@@ -123,6 +125,52 @@ Lambda functions can run up to 15 minutes. That is the max limit.
 - Always load data from other services from public API's or S3
 - Store data to other services (e.g. S3)
 - 1M free requests and 400,000 GB-seconds of compute per month
+
+#### Public Lambda
+Lamda is public by default and can access public AWS services (SQS, DynamoDB)
+
+By default, public lambdas dont have access to VPCs unless they have public IPv4
+
+#### Private Lambda
+Obey all VPC networking rules
+
+ENIs are now created for each unique combination of subnets and SGs 
+  - If all subnets use same SG, only one ENI
+
+#### Security
+Lambda needs execution role to decide which AWS services it can access
+
+Also has resource policy that decide who and what can access it 
+
+#### Invocation
+##### Synchronous
+CLI/API invokes a function and WAITS for a response
+
+Errors or Retries have to be handled within the client
+
+##### Asynchronous
+Typically used when AWS services invoke functions
+
+Lambda is responsible for retries
+  - function needs to be idempotent (reprocessing should have same end state)
+
+Events sent to Dead Letter Queues if failed after repeated processing
+
+Sent to destinations if successful or failed too
+
+##### Event Source Mapping
+Typically used on streams or Queues which which dont support event generation
+
+Lambda polls the stream and thus needs permission on source
+
+#### Versions
+Lambda supports versions
+
+#### Launch
+Cold Start - full creation
+
+Warm Start - same execution context is reused if another event happens soon (infrequent contexts are removed)
+
 
 ### CloudWatch Events and EventBridge
 
