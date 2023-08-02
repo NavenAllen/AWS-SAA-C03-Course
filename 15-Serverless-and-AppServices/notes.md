@@ -376,6 +376,7 @@ guarantee the order and at least once delivery.
 FIFO - single lane road with no way to overtake
 guarantee the order and at exactly once delivery
 3,000 messages per second with batching or up to 300 messages second without
+Messages need to have **.fifo** to be valid (very important)
 
 Billed on **requests** not messages. A request is a single request to SQS
 One request can send 1 - 10 messages up to 64KB total.
@@ -396,6 +397,11 @@ Messages can live on SQS Queue for up to 15 days. They offer KMS encryption
 at rest.
 
 Access is based on identity policies or a queue policy.
+
+### SNS SQS Fanout
+Event is sent to one SNS topic
+
+Multiple SQS topics subscribe to the SNS topic and messages added to each queue
 
 ### Kinesis
 
@@ -425,8 +431,6 @@ Each shard can have 1MB/s for ingestion and 2MB/s consumption.
 **Kinesis data records (1MB)** are stored accross shards and are the blocks
 of data for a stream.
 
-**Kinesis Firehose** connects to a Kinesis stream. It can move the data
-from a stream onto S3 or another service.
 
 ### SQS vs Kinesis
 
@@ -444,3 +448,67 @@ Kinesis is desiged for huge scale ingestion with multiple consumers. Rolling
 window for multiple consumers.
 
 Designed for data ingestion, analytics, monitoring, app clicks.
+
+#### Kinesis Firehose
+- connects to a Kinesis stream
+- It can move the data from a stream onto S3 or another service.
+- Automatic Scaling
+- Near Real Time
+- Supports transformation
+- Valid Destinations:
+    - HTTP
+    - Splunk
+    - Redshift
+    - ElasticSearch
+    - S3
+- Can directly accept data without streams
+- Near Real Time: waits for 1mb of data for 60 seconds on buffer
+
+### Kinesis Data Analytics
+- Real Time processing using SQL
+- Ingests from Kinesis Data Streams or Firehose
+- Destinations
+    - Firehose destinations (Only near real time)
+    - AWS Lambda
+    - Kinesis Data Streams
+
+ ### Cognito
+ #### User Pools
+ - Swaps external identity for JWT only
+ - cannot be used to access AWS resources
+
+#### Identity Pools
+- Swaps identity for AWS creds
+- Can use User Pool tool to return AWS creds
+
+### AWS Glue
+Serverless ETL (Extract, Transform & Load)
+
+Glue is serverless and ad-hoc compared to Data Pipeline
+
+#### Data Catalog
+- Crawlers connect to data stores to create metadata and store it in data catalog
+- Glue jobs extract data and load it in targets
+
+### Amazon MQ
+Open Source Message broker
+
+Based on Apache ActiveMQ
+
+VPC Bases
+
+No AWS native integration
+
+#### When to use Amazong MQ
+- SNS or SQS for new implementations
+- SNS or SQS if AWS integration is required
+- Amazon MQ if migration without much application change
+- Amazon MQ if APIs just as JMS or protocols such as AMQP, OpenWire, STOMP or MQTT
+- NEED PRIVATE NETWORKING FOR AMAZON MQ
+
+### Amazon AppFlow
+Integration service
+
+Exchange data between applications
+
+Sync or aggregate from different sources
