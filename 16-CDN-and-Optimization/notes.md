@@ -93,6 +93,34 @@ We then remove the explicit allows and only allow the OAI to use it.
 
 Best practice is to create one per distribution to manage permissions.
 
+### Private Distributions
+Requests require signed cookie or URL
+
+OLD:
+- Cloudfront Key is created by an Account Root User
+- The account is added as a trusted user
+
+NEW:
+- Trusted Key Groups added
+
+SignedURLs provides access to one object ONLY
+
+Cookies provides access to groups of objects
+
+### Lambda@Edge
+Lightweight lambda at edge
+
+Adjust data between viewer & origin
+
+Only AWS public
+
+Uses:
+- A/B testing: Viewer Request
+- Migration between S3 Origins: Origin Request
+- Different Objects based on Device: Origin Request
+- Content By Country: Origin Request
+
+  
 ### AWS Global Accelerator
 
 Starts with 2 **anycast** IP address
