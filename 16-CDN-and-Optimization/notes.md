@@ -21,6 +21,21 @@ third party server system.
 Regional Edge Cache - larger version of an edge location. Provides
 another layer of caching.
 
+Distributions have **Behaviors** which defines what to do with each path
+
+#### Things set in Distributions
+- Price Class
+- Alternate Domain Name
+- SSL Certificate
+
+#### Things set in Behaviour
+- Path Pattern
+- Viewer Protocol
+- Restricted Access
+- Cache directives
+- Lambda@Edge
+
+
 #### Caching Optimisation
 
 Parameters can be passed on the url such as query string parameter.
@@ -41,11 +56,32 @@ website then uses that certificate to prove its authenticity.
 
 Create, renew, and deploy certificates with ACM.
 
-Supported AWS services ONLY (CloudFront and ALB, NOT EC2)
+Supported AWS services ONLY (CloudFront and ALB, NOT EC2) (Very Important)
 
 If it's not a managed service, ACM doesn't support it.
 
 Cloudfront must have a trusted and signed certificate. It can't be self signed.
+
+ACM is a regional service, certs cannot leave the region they are generated or imported in.
+
+TO USE A CERT WITH AN ALB IN A REGION, YOU NEED A CERT IN THE SAME REGION (Very very important)
+  - Exception is CloudFront since us-east-1 is where distributions are stored
+
+### CloudFront and SSL/TLS:
+- SSL needed each application to have own IP
+- SNI was added to let client know what site it was trying to access so server can respond with corresponding certificate
+- For cloudfront to support legacy browsers, it needs dedicated IPs ($600/per month per distribution)
+
+### Origin and Origin Groups
+Origin groups are groups of origins that provide resiliency
+
+Types of origins:
+- S3 Bucket
+- Media Endpoints
+- everything else (web servers, S3 configured with static hosting is also viewed as a web server)
+
+For S3, viewers and origin protocols are the same
+
 
 ### Origin Access Identity (OAI)
 
