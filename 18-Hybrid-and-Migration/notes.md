@@ -1,5 +1,19 @@
 ## Hybrid Enviroment and Migration
 
+### Border-Gateway Protocol
+Routing protocal
+
+Autonomous systems - Routers controlled by one entity (Black Box)
+
+ASN are unique and allocated by IANA
+
+Path-vector protocol - exchanges best path to a destination - ASPATH
+
+iBGP - Internal, eBGP - between As's
+
+
+
+
 ### AWS Site-to-Site VPN
 
 A logical connection between a VPC and on-premise network encrypted
@@ -32,6 +46,10 @@ Cost - AWS hourly, GB out cost, data cap
 Setup of hours or less
 
 Great as a backup especially for Direct Connect (DX)
+
+
+
+
 
 ### AWS Direct Connect (DX)
 
@@ -71,6 +89,16 @@ It does not use public internet and provides consistently low latency.
 
 DX provides NO ENCRYPTION and needs to be managed on a per application basis.
 
+
+
+
+### Public VIF + VPN over DX
+We can use a Public VIF + VPN over IPSec to provide encryption
+
+VPN Site2Site is also a backup
+
+We use Public VIF cause we connecto to Public IPs (gateways)
+
 ### AWS Transit Gateway (TGW)
 
 Network transit hub to connect VPCs to on premises networks
@@ -88,9 +116,23 @@ You can use these for cross-region peering attachment.
 
 Can share between accounts using AWS RAM
 
+#### Key points
+- Supports transitive routing
+- Supports peering even with other transit gateways (can create global networks)
+- Share accounts with AWS RAM
+- Peer with different regions.. same or cross account
+
+
+
 ### Storage Gateway
 
 Hybrid Storage Virtual Application (On-premise)
+
+Virtual machine (or hardware appliance in rare cases)
+
+Integrates with EBS, S3 and Glacier
+
+Migrations, Extensions, Storage Tiering
 
 Scenarios
 
@@ -102,21 +144,37 @@ Migration of extisting infrastructure into AWS slowly.
 
 - Tape Gateway (VTL) Mode
   - Virtual Tapes are stored on S3
+  - Tape Library is S3 and Tape Shelf is Glacier 
 
 - File Mode : SMB and NFS
   - File Storage Backed by S3 Objects
+  - Mount points map directly onto an S3 bucket
+  - Can be used to implement multi-site architecture, same object in S3 can be mapped to multiple sites
+  - Can do replications to different regions
+  - Can integrate with S3 Lifecycle management
 
-- Volume Mode (Gateway Stored)
+#### Volume Mode 
+Raw Volume Blocks are provided via iSCSI
+
+Gateway Stored (Used for backup, migration)
+  - Primary data storage is On Premises
   - Block Storage backed by S3 and EBS
   - Great for disaster recovery
   - Data is kept locally
   - Awesome for migrations
+  - Has a upload buffer which is used to store into S3 asynchronously using a Sotrage Gateway Endpoint
+  - Not good for storage extensions
 
-- Volume Mode (Cache Mode)
-  - Data as added to gateway is not stored locally.
+Cache Mode (Used for Storage extensions)
+  - Primary data is stored in S3 (AWS Managed, only available through Storage Gateway console)
+  - Data as added to gateway is not stored locally, only frequently accessed data is saved in local cache
   - Backup to EBS Snapshots
   - Primarily stored on AWS
   - Great for limited local storage capacity.
+
+
+
+
 
 ### Snowball / Edge / Snowmobile
 
@@ -133,6 +191,7 @@ Anything on Snowball uses KMS
 1 Gbps or 10 Gbps
 This makes sense from 10 TB to 10 TB and over many premises.
 This only includes storage
+**Multiple devices to multiple premises**
 
 #### Snowball Edge
 
@@ -144,7 +203,7 @@ Storage optimized (with EC2) includes 1TB SSD
 Compute optimized
 Compute with GPU as above with GPU
 
-These are great for remote sites when ingestion is needed
+**These are great for remote sites when data processing on ingestion is needed**
 
 #### Snowmobile
 
@@ -155,7 +214,10 @@ Ideal for single location where 10 PB+ is required.
 
 Up to 100 PB per snowmobile.
 
-This is not economical for multi-site for sub 10 PB
+**This is not economical for multi-site for sub 10 PB**
+
+
+
 
 ### AWS Directory Service
 
@@ -187,13 +249,16 @@ Could act as a proxy back to on-premises.
 
 #### Picking the Modes
 
-Simple AD should be default
+Simple AD should be default - uses SAMBA - cannot connect with on-prem AD
 
 Microsoft AD is anything with Windows or if it needs a trust relationship
-with on-prem. This is not an emulation.
+with on-prem. This is not an emulation. Actual implmentation of Microsoft AD
 
 AD Connector - Use AWS services without storing any directory info in the
 cloud, it proxies to your on-prem directory.
+
+
+
 
 ### AWS DataSync
 
@@ -225,12 +290,22 @@ Pay as you use product.
 The data is encrypted in transit and all of the data transfer in parts.
 
 #### Components
+Datasync agent needs to be installed on premises
+
+Bidirectional transfer
 
 Task is a job within datasync and defines what is going from where to where
 
 Agent is software to read and write to on prem such as NFS or SMB
 
 Location is the FROM and TO
+
+DataSync endpoint can store into S3 or EFS or FSx or NFS or SMB
+
+Transfers can be scheduled, automatic retries, compression, bandwith throttle, traditional file transfer protocols
+
+
+
 
 ### FSx for Windows File Server
 
@@ -251,10 +326,56 @@ windows filesystem or Directory Services.
 VSS - User Driven Restores
 Native file system accesible over SMB
 
+Supports shadow copies (file level versioning)
+
 Windows permissions model
 
-Product supports DFS, scale out file share.
+Product supports DFS (Distributed File Share), scale out file share.
 
 Managed - no file server admin
 
 Integrates with DS and your own directory.
+
+
+
+
+### FSx for Lustre
+Managed Lustre - HPC - Linux - POSIX
+
+Deployment Types:
+- Scratch: Highly Optimized for Short term
+- Persistent: Longer term, HA (in one AZ), self-healing
+
+Lazy-Loaded from S3 repository and can be exported (not in sync)
+
+Split into different targets
+- Metadata targets
+- Object Storage Targets
+
+Baseline and credit systems for burst 
+
+Runs in One AZ
+
+#### Key Points
+- Scratch for pure performance: No HA, No Replication
+- Persistent has replication within one AZ (Auto-heals)
+- Backup to S3 for both (Manual or Automatic)
+- Cannot be used with Windows, only Linux HPC
+
+
+
+### AWS Transfer Family
+Managed service: transfer FROM or TO S3 and EFS
+
+Managed servers that support FTP, FTPS, SFTP, AS2
+
+Managed File Transfer Worflows (MFTW) - serverless file workflow engine
+
+Endpoints Types:
+- Public: only SFTP and Dynamic IP
+- VPC - Internet: SFTP or FTPS, allocated Elastic IP
+- VPC - Internal: SFTP or FTP or FTPS
+
+For AS2, VPC Internet/Internal only
+
+
