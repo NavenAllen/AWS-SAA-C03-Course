@@ -137,97 +137,94 @@ Pre or post change state might be empty if you use **insert** or **delete**
 - **global eventual consistency** but can have same region strongly consistent
 - Provides Global HA and disaster recovery easily.
 
-### DynamoDB Accelerator (DAX)
+## DynamoDB Accelerator (DAX)
+- DAX SDK and dynamoDB are one in the same
+- If DAX has the data then the data is returned direclty. If not it will talk to Dynamo and get the data
+- This is one set of API calls and is much easier for the developers.
 
-This is an in memory cache for Dynamo.
+### DAX Architecture
+- There is a primary node which is a Read and Write node which flows out to read replicas on other AZs 
+- Item cache holds results of batch **GetItem** or batch getitem. You must specify the items partition or sort key.
+- There is a query cache which holds data and the parameters used for the original query or scan
+- Every DAX cluster has an endpoint which can return data in microseconds.
+- Any cache miss can be returned in single digit miliseconds.
+- When writing data to DAX, it can use write-through. Data is written to the database, then written to DAX.
 
-Traditional Cache : The application needs to access some data and checks
-the cache. If there is no data, it is a cache miss and it pulls from
-the database. This then updates the cache with the new data. Next times
-there will be a cache hit and it will be faster
+### DAX Considerations
+- Primary node which writes and Replicas which read
+- Nodes are HA, if this fails there will be an election and secondary nodes will be made primary.
+- In-memory cache - scaling. If you are performing the same operations, you can achieve faster reads and reduced costs.
+- DAX supports write-through. If you write data to DynamoDB, you can use the DAX SDK.
+- DAX is not a public service and is deployed within a VPC
+- Any questions which talk about caching with DynamoDB, assume it is DAX.
 
-DAX : The application instance has DAX SDK added on. DAX and dynamoDB are one
-in the same. If DAX has the data then the data is returned direclty. If not
-it will talk to Dynamo and get the data. This is one set of API calls and
-is much easier for the developers.
+## DynamoDB TTL
+- Timestamp for automatic deletion of items
+- A per-partition process periodically runs and makes items **expired**
+- Another per-partition background process deletes expired items
 
-#### DAX Architecture
 
-This runs from within a VPC and is designed to be deployed to multiple
-AZs in that VPC. It must be deployed accross availablity zones to ensure
-it is available.
+## Amazon Athena
+- Ad-hoc queries on data - pay only data consumed
+- Schema-on-read - original data never changed **on S3**
+- Output to other serverices
+- Tables are defined on schema
+- Allows SQL-like queries on data without transforming data
 
-There is a primary node which is a Read and Write node which flows
-out to read replicas on other AZs. The DAX SDK communicates with the Read
-Write node.
+### When to use Athena
+- No infrastructure
+- Serverless querying scenarios - **cost conscious**
+- Querying **AWS logs**
+- AWS **Glue Data Catalog** & **Web Server Logs**
+- **Athena Federated Query** - other data sources
 
-Item cache holds results of batch **GetItem** or batch getitem. You must
-specify the items partition or sort key.
+## ElastiCache
+- In-memory database
+- Managed Redis or Memcached
+- READ HEAVY workloads - *cost effective*
+- **Requires application code changes**
+- Used for SESSIONS to make applications stateful
+   - Elasticache is separate infra so is available even if few instances file
+ 
+### Memcached
+- Simple DS
+- No replication
+- Multiple Nodes (Sharding)
+- No backups
+- Mutli-threaded
 
-There is a query cache which holds data and the parameters used for the
-original query or scan. Whole query or scan operations can be rerun
-and return the same cache data.
+### Redis
+- Advanced Structures
+- Nulti-AZ
+- Replication (Scale Reads)
+- Backups & Restore
+- Transactions
 
-Every DAX cluster has an endpoint which can return data in microseconds.
+## Amazon Redshift
+- Petabyte-sale warehouse
+- OLAP (Column Based)
+- Pay as you use (Like RDS)
+- Direct Query S3 - Redshift Specturm
+- Direct Query other DBs using federated query
 
-Any cache miss can be returned in single digit miliseconds.
+### Architecture
+- Server based and NOT Ad-hoc (unlike Athena)
+- One-AZ in VPC (not HA)
+- Leader Node - Query input, planning and aggregation
+- Compute Node - performing queries of data
+- Has all VPC facilities
+- Redshift **Enhanced VPC Routing** - VPC Network Routing
 
-When writing data to DAX, it can use write-through. Data is written to the
-database, then written to DAX.
+#### Services that can integrate:
+- Load and Unload from S3
+- COPY from DynamoDB
+- DMS into redshift
+- Firehose can stream into Redshift
 
-#### DAX Considerations
+### DR and Resilience 
+- Data is replicated to an extra node for local hardware failure
+- Automatic incemental backups ever ~8 hours or 5GB of data and by default have a 1-day retention
+- Manual snaps can be taken
+- Can be configured to copy snapshots to another region for DR with separate retention period
 
-Primary node which writes and Replicas which read
 
-Nodes are HA, if this fails there will be an election and secondary nodes
-will be made primary.
-
-In-memory cache - scaling. If you are performing the same operations, you
-can achieve faster reads and reduced costs.
-
-With DAX you can scale up or scale out.
-
-DAX supports write-through. If you write data to DynamoDB, you can
-use the DAX SDK.
-
-DAX is not a public service and is deployed within a VPC. Anything
-that uses that data many times will benefit from DAX.
-
-Any questions which talk about caching with DynamoDB, assume it is DAX.
-
-### Amazon Athena
-
-You can take data stored in S3 and perform Ad-hoc queries on data. Pay
-only for the data consumed.
-
-This is serverless.
-
-Start off with structured, semi structured data stored in S3.
-
-This uses **schema-on-read**, the original data is never changed
-and remains on S3 in its original form.
-
-This modifies data in flight when its read.
-
-Normally you need to make a table and then load the data in.
-
-With Athena you create a schema and load data on this schema on the fly in
-a relational style way without changing the data.
-
-The output of a query can be sent to other services and can be
-performed in an event driven way.
-
-#### Athena Explained
-
-The source data is stored on S3 and Athena can read from this data.
-
-In Athena you are defining a way to get the original data and defining
-how it should show up for what you want to see.
-
-Tables are defined in advance in a data catalog and data is projected
-through when read. It allows SQL-like queries on data without transforming
-the data itself.
-
-This can be saved in the console or fed to other visualation tools.
-
-You can optimize the original data set.
