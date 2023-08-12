@@ -1,34 +1,8 @@
-## Security, Deployment, Operations
-
-### AWS Secrets Manager
-
-It does share functionality with parameter store.
-
-This is designed specifically for secrets, passwords, API keys.
-
-Usable via Console, CLI, API, or SDK
-
-Supports the automatic rotation using Lambda.
-
-It also directly integrates with RDS and other AWS products. If lambda
-is invoked and changes a secret, the password can automatically
-change in RDS.
-
-This is great for rotating secrets and especially with RDS.
-
-#### Example
-
-The Secrets Manager SDK can be used to retrieve credentials. It can use IAM
-role or access keys to retrieve the secrets.
-
-Once the application has these secrets, it can access the database.
-
-Periodically, the lambda function can rotate the secrets. The Lambda uses
-IAM roles to do this.
-
-The authenticaion in RDS is also rotated automatically.
-
-Secrets are secured via KMS which ensures role seperation.
+## AWS Secrets Manager
+- Designed specifically for secrets (passwords, API keys)
+- Usable via Console, CLI, API, or SDK
+- Supports the automatic rotation using Lambda.
+- Direct integration with AWS products (great for rotating secrets and especially with RDS)
 
 ### AWS Shield and WAF (Web Application Firewall)
 
