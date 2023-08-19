@@ -235,6 +235,7 @@ it can be changed as long as the conditions are met
  - Stored in S3 IA for a temp period
 #### Expedited
 Retrieval between 1 - 5 minutes, most expensive
+Provisioned capacity can be bought in advance to make sure it's available when needed
 #### Standard
 Retrievals take 3 - 5 hours to restore.
 This is good for backup data or original media if there was a mistake.
